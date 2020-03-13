@@ -1,4 +1,47 @@
 var AM = new AssetManager();
+var dataList = {yLeftBumper: 100, leftBumperSpeed: 3, yRightBumper: 100, rightBumperSpeed: 3, ball1X: 0, ball1Y: 0, ball1deltaX: 1, ball1deltaY: 1, ball2X: 0, ball2Y: 0, ball2deltaX: 1, ball2deltaY: 1, score1: 0, score2: 0 };
+
+window.onload = function (gameEngine) {
+    var socket = io.connect("http://24.16.255.56:8888");
+    this.gameEngine = gameEngine;
+  
+    socket.on("load", function (data) {
+        dataList.yLeftBumper = data.yLeftBumper;
+        dataList.yRightBumper = data.yRightBumper;
+        dataList.leftBumperSpeed = data.leftBumperSpeed;
+        dataList.rightBumperSpeed = data.rightBumperSpeed;
+        dataList.ball1X = data.ball1X;
+        dataList.ball1Y = data.ball1Y;
+        dataList.ball2X = data.ball2X;
+        dataList.ball2Y = data.ball2Y;
+        dataList.score1 = data.score1;
+        dataList.score2 = data.score2;
+
+        console.log(data.statename);
+    });
+  
+    var text = document.getElementById("text");
+    var saveButton = document.getElementById("save");
+    var loadButton = document.getElementById("load");
+  
+    saveButton.onclick = function () {
+      console.log("save");
+      text.innerHTML = "Saved."
+      socket.emit("save", { studentname: "Nicholas Caron", statename: "anything else", yLeftBumper: dataList.yLeftBumper
+                   , leftBumperSpeed: dataList.leftBumperSpeed, yRightBumper: dataList.yRightBumper
+                   , rightBumperSpeed: dataList.rightBumperSpeed, ball1X: dataList.ball1X, ball1Y: dataList.ball1Y
+                   , ball2X: dataList.ball2X, ball2Y: dataList.ball2Y, score1: dataList.score1, score2: dataList.score2
+                   , ball1deltaX: dataList.ball1deltaX, ball1deltaY: dataList.ball1deltaY, ball2deltaX : dataList.ball2deltaX, ball2deltaY: dataList.ball2deltaY});
+    };
+  
+    loadButton.onclick = function () {
+      console.log("load");
+      text.innerHTML = "Loaded."
+      this.score = "Left Score: " + dataList.score1 + " Right Score: " + dataList.score2;
+      socket.emit("load", { studentname: "Nicholas Caron", statename: "anything else"});
+    };
+  
+  };
 
 
 function Animation(spriteSheet, frameWidth, frameHeight, sheetWidth, frameDuration, frames, loop, scale) {
@@ -69,11 +112,13 @@ function leftBumper(gameEngine, ctx){
     this.ball = this.gameEngine.entities[0];
     this.ctx = ctx;
     this.x = 30;
-    this.y = 100;
-    this.speed = 4;
+    this.y = dataList.yLeftBumper;
+    this.speed = dataList.leftBumperSpeed;
     this.width = 20;
     this.height = 100;
     this.leftRect = {x:this.x, y: this.y, width: this.width, height: this.height}; 
+    this.ball1 = this.gameEngine.entities[0];
+    this.ball2 = this.gameEngine.entities[9];
 };
 
 leftBumper.prototype = new Entity();
@@ -87,6 +132,20 @@ leftBumper.prototype.draw = function(){
 };
 
 leftBumper.prototype.update = function(){
+    this.ball2 = this.gameEngine.entities[9];
+    if(this.y != dataList.yLeftBumper){
+         this.ball1.x = dataList.ball1X;
+         this.ball1.y = dataList.ball1Y;
+         this.ball1.deltaX = dataList.ball1deltaX;
+         this.ball1.deltaY = dataList.ball1deltaY;
+         if(this.ball2 != null){
+         this.ball2.x = dataList.ball2X;
+         this.ball2.y = dataList.ball2Y;
+         this.ball2.deltaX = dataList.ball2deltaX;
+         this.ball2.deltaY = dataList.ball2deltaY;
+         }
+    }
+    this.y = dataList.yLeftBumper;
     this.distance1 = Math.sqrt(Math.pow(this.gameEngine.entities[0].x - this.x, 2) + Math.pow(this.gameEngine.entities[0].y - this.y, 2));
     this.distance2 = Math.sqrt(Math.pow(this.gameEngine.entities[9].x - this.x,2) + Math.pow(this.gameEngine.entities[9].y - this.y,2));
     if(this.distance1 <= this.distance2){
@@ -108,6 +167,17 @@ leftBumper.prototype.update = function(){
     }
     else if(this.ball.y +10< this.y + (this.height/2)){
         this.y -= this.speed;
+    }
+    dataList.yLeftBumper = this.y;
+    dataList.ball1X = this.ball1.x;
+    dataList.ball1Y = this.ball1.y;
+    dataList.ball1deltaX = this.ball1.deltaX;
+    dataList.ball1deltaY = this.ball1.deltaY;
+    if(this.ball2 != null){
+        dataList.ball2X = this.ball2.x;
+        dataList.ball2Y = this.ball2.y;
+        dataList.ball2deltaX = this.ball2.deltaX;
+        dataList.ball2deltaY = this.ball2.deltaY;
     }
 };
 
@@ -134,6 +204,7 @@ rightBumper.prototype.draw = function(){
 };
 
 rightBumper.prototype.update = function(){
+    this.y = dataList.yRightBumper;
     this.distance1 = Math.sqrt(Math.pow(this.gameEngine.entities[0].x - this.x, 2) + Math.pow(this.gameEngine.entities[0].y - this.y, 2));
     this.distance2 = Math.sqrt(Math.pow(this.gameEngine.entities[9].x - this.x,2) + Math.pow(this.gameEngine.entities[9].y - this.y,2));
     if(this.distance1 <= this.distance2){
@@ -156,7 +227,7 @@ rightBumper.prototype.update = function(){
     else if(this.ball.y +10< this.y + (this.height/2)){
         this.y -= this.speed;
     }
-
+    dataList.yRightBumper = this.y;
 };
 
 
@@ -182,8 +253,7 @@ ball.prototype.draw = function(){
     this.ctx.beginPath();
     this.ctx.arc(this.x, this.y,20,0,2* Math.PI);
     this.ctx.fill();
-    //this.ctx.fillStyle = "red";
-    //this.ctx.fillRect(this.ballRect.x,this.ballRect.y,this.ballRect.width,this.ballRect.height);
+
 };
 
 ball.prototype.update = function(){
@@ -197,17 +267,7 @@ ball.prototype.update = function(){
 
     var rect2 =this.ballRect;
     var rect1 =this.leftBumper.leftRect;
-    /*
-        rect 2 has the dimensions of what the ball is colliding with
-        rect 1 is the ball
 
-
-
-
-
-
-
-    */
     if(rect1.x < rect2.x + rect2.width 
         && rect1.x + rect1.width > rect2.x 
         && rect1.y < rect2.y + rect2.height 
@@ -237,31 +297,6 @@ ball.prototype.update = function(){
         };
         
         
-
-
-        /*
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
-
-        */
-
 
         var rect1 =this.rightBumper.rightRect;
         if(rect1.x < rect2.x + rect2.width 
@@ -429,13 +464,14 @@ leftScore.prototype.draw = function(){
 };
 
 leftScore.prototype.update = function(){
+    this.score = dataList.score1;
     if(this.gameEngine.entities[0].x >= 980){
         this.score ++;
     }
     if(this.gameEngine.entities[9].x >= 980){
         this.score ++;
     }
-
+    dataList.score1 = this.score;
 };
 
 
@@ -454,12 +490,14 @@ rightScore.prototype.draw = function(){
 };
 
 rightScore.prototype.update = function(){
+    this.score = dataList.score2;
     if(this.gameEngine.entities[0].x <= 20){
         this.score ++;
     }
     if(this.gameEngine.entities[9].x <= 20){
         this.score ++;
     }
+    dataList.score2 = this.score;
 };
 
 function box(gameEngine, ctx, x, y){
@@ -478,8 +516,7 @@ box.prototype.constructor = box;
 box.prototype.draw = function(){
     this.ctx.fillStyle = "white";
     this.ctx.fillRect(this.x,this.y,this.width,this.height);
-    //this.ctx.fillStyle = "red";
-    //this.ctx.fillRect(this.x,this.y,this.width,this.height);
+
 };
 
 box.prototype.update = function(){
@@ -497,7 +534,6 @@ AM.queueDownload("./img/BellmontMove.png");
 AM.downloadAll(function(){
     var canvas = document.getElementById("gameWorld");
     var ctx = canvas.getContext("2d");
-
     var gameEngine = new GameEngine();
     gameEngine.init(ctx);
     gameEngine.start();
@@ -512,7 +548,10 @@ AM.downloadAll(function(){
     gameEngine.addEntity(new box(gameEngine, ctx, 620,175));
     gameEngine.addEntity(new box(gameEngine, ctx, 620,445));
     gameEngine.addEntity(new ball(gameEngine, ctx));
-    
+
+
+
+
     console.log("Thats it folks!");
 });
 
